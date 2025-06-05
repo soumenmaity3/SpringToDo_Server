@@ -18,6 +18,9 @@ public class User {
     @JsonManagedReference
     private List<ToDo> todos=new ArrayList<>();
 
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private PasswordResetToken passwordResetToken;
+
     public User() {
     }
 
@@ -58,5 +61,13 @@ public class User {
 
     public void setTodos(List<ToDo> todos) {
         this.todos = todos;
+    }
+
+    public PasswordResetToken getPasswordResetToken() {
+        return passwordResetToken;
+    }
+
+    public void setPasswordResetToken(PasswordResetToken passwordResetToken) {
+        this.passwordResetToken = passwordResetToken;
     }
 }

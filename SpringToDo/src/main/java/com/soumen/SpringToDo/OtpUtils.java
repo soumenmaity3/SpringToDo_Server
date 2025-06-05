@@ -1,16 +1,22 @@
 package com.soumen.SpringToDo;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Random;
 
 public class OtpUtils {
-    static String otpReturn="";
-    public static String generateOtp() {
+    public String generateOtp() {
         Random random = new Random();
         int otp = 100000 + random.nextInt(900000);
-        otpReturn=String.valueOf(otp);
-        return otpReturn;
+        return String.valueOf(otp);
     }
-    public String otp(){
-        return otpReturn;
+
+    public LocalDateTime getCurrentDateTime() {
+        return LocalDateTime.now();
+    }
+
+    public LocalDateTime getExpiryDateTime() {
+        return LocalDateTime.now().plusMinutes(10);
     }
 }
+

@@ -1,8 +1,8 @@
 package com.soumen.SpringToDo.Model;
 
-public class EmailRequest {
+public class OtpModel {
     private String email;
-//    private String otp;
+    private String otp;
 
     public String getEmail() {
         return email;
@@ -11,13 +11,12 @@ public class EmailRequest {
     public void setEmail(String email) {
         this.email = email;
     }
-//
-//    public String getOtp() {
-//        return otp;
-//    }
-//
-//    public void setOtp(String otp) {
-//        this.otp = otp;
-//    }
-}
 
+    public String getOtp() {
+        return otp;
+    }
+
+    public void setOtp(String otp) {
+        this.otp = otp;
+    }
+}

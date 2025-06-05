@@ -1,11 +1,9 @@
 package com.soumen.SpringToDo.Controller;
 
-import com.soumen.SpringToDo.Model.EmailRequest;
-import com.soumen.SpringToDo.Model.LoginModel;
-import com.soumen.SpringToDo.Model.ToDo;
-import com.soumen.SpringToDo.Model.User;
+import com.soumen.SpringToDo.Model.*;
 import com.soumen.SpringToDo.OtpUtils;
 import com.soumen.SpringToDo.Repository.AddTaskRepo;
+import com.soumen.SpringToDo.Repository.PasswordResetTokenRepository;
 import com.soumen.SpringToDo.Repository.ToDoRepo;
 import com.soumen.SpringToDo.Service.EmailService;
 import com.soumen.SpringToDo.Service.UserService;
@@ -17,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -221,30 +220,60 @@ public ResponseEntity<?> loginUser(@RequestBody LoginModel login) {
 
     @Autowired
     private EmailService emailService;
+    @Autowired
+    PasswordResetTokenRepository tokenRepository;
 
     @PostMapping("/send-otp")
     public ResponseEntity<?> sendOtp(@RequestBody EmailRequest request) {
         try {
-            emailService.sendOtp(request.getEmail());
-            return ResponseEntity.ok("OTP sent successfully");
+            String email = request.getEmail();
+            OtpUtils otpUtils = new OtpUtils();
+
+            String otp = otpUtils.generateOtp();
+            LocalDateTime now = otpUtils.getCurrentDateTime();
+            LocalDateTime expiry = otpUtils.getExpiryDateTime();
+
+            emailService.sendOtp(email, otp);
+            tokenRepository.deleteByUserEmail(email);
+            tokenRepository.saveAllTable(otp, now, expiry, false, email);
+
+            return ResponseEntity.ok("OTP sent and stored successfully");
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Failed to send OTP");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send OTP");
         }
     }
-    @GetMapping("/otp-checker")
-    public ResponseEntity<?> otpChecker(@Param("otp") String otp){
-        OtpUtils otpUtils=new OtpUtils();
-        String otp2=otpUtils.otp();
-//        String email2=repo.checkUserEmail2(email);
-//        if (email2 == null) {
-//            return new ResponseEntity<>("Enter Correct Email",HttpStatus.NOT_FOUND);
+
+
+//    @PostMapping("/store-otp")
+//    public ResponseEntity<?> storeOtp(@RequestBody PasswordResetToken passwordResetToken){
+//            OtpUtils otpUtils=new OtpUtils();
+//        LocalDateTime currentTime=otpUtils.getCurrentDateTime();
+//        LocalDateTime expiry=otpUtils.getExpiryDateTime();
+//        User user=passwordResetToken.getUser();
+//        boolean used=passwordResetToken.isUsed();
+//        String otp=otpUtils.otp();
+//        if (user==null){
+//            return  new ResponseEntity<>("User Not Found.",HttpStatus.NOT_FOUND);
+//        }else {
+//            tokenRepository.deleteByUserEmail(user.getEmail());
+//            tokenRepository.saveAllTable(otp,currentTime,expiry,used,user.getEmail());
+//            return new ResponseEntity<>("Done",HttpStatus.OK);
 //        }
-        if (otp2.equals(otp)){
-            return new ResponseEntity<>("Correct",HttpStatus.OK);
-        }else {
-            return new ResponseEntity<>("This is not work",HttpStatus.BAD_REQUEST);
-        }
+//    }
+    @GetMapping("/otp-checker")
+    public ResponseEntity<?> otpChecker(@RequestBody OtpModel otpModel){
+       String storedOtp= tokenRepository.checkOtpByEmail(otpModel.getEmail());
+       if (storedOtp==null||!storedOtp.equals(otpModel.getOtp())){
+           return new ResponseEntity<>("Otp Not Matched",HttpStatus.BAD_REQUEST);
+       }else {
+           int i=tokenRepository.changeUsedToTrue(otpModel.getEmail());
+           if (i > 0) {
+               return new ResponseEntity<>("USed",HttpStatus.OK);
+           }
+           else{
+               return new ResponseEntity<>("Check your Otp",HttpStatus.BAD_REQUEST);
+           }
+       }
     }
 }
