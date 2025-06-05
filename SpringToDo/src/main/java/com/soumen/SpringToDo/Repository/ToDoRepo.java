@@ -20,7 +20,7 @@ public interface ToDoRepo extends JpaRepository<User,Long> {
 
     @Modifying
     @Transactional
-    @Query(value = "DELETE FROM to_do WHERE email = :email", nativeQuery = true)
+    @Query(value = "DELETE FROM to_do WHERE email = :email AND completed = true", nativeQuery = true)
     int deleteHistory(@Param("email") String email);
 
     Optional<User> findByEmailAndPassword(String email, String password);
@@ -32,8 +32,21 @@ public interface ToDoRepo extends JpaRepository<User,Long> {
 
     @Query(value = "SELECT password FROM users  WHERE email = :email",nativeQuery = true)
     String checkUserPasswordByEmail(@Param("email")String  email);
+
     Optional<User> findByEmail(String email);
 
     @Query(value = "SELECT user_name FROM users WHERE email = :email",nativeQuery = true)
     String findUsernameByEmail(@Param("email") String email);
+
+    @Modifying
+    @Query(value = "UPDATE to_do SET completed = false WHERE completed = true AND email=:email", nativeQuery = true)
+    int recoverDataByEmail(@Param("email") String email);
+
+    @Query(value = "SELECT email FROM users WHERE email = :email", nativeQuery = true)
+    String checkUserEmail2(@Param("email") String email);
+
+    @Modifying
+    @Transactional
+    @Query(value = "UPDATE users SET password=:password WHERE email=:email",nativeQuery = true)
+    int resatPassword(@Param("email") String email,@Param("password") String password);
 }

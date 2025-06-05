@@ -9,6 +9,7 @@ public class ToDo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private String tittle;
+    @Column(length = 100000)
     private String description;
     private boolean completed;
 
