@@ -11,6 +11,7 @@ import com.soumen.SpringToDo.Summary.ToDoSummary;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
@@ -223,45 +224,54 @@ public ResponseEntity<?> loginUser(@RequestBody LoginModel login) {
     @Autowired
     PasswordResetTokenRepository tokenRepository;
 
-    @PostMapping("/send-otp")
-    public ResponseEntity<?> sendOtp(@RequestBody EmailRequest request) {
+    @PostMapping("/send-otp/{otp}")
+    public ResponseEntity<?> sendOtp(@RequestParam("email")String email,@PathVariable String otp) {
         try {
-            String email = request.getEmail();
-            OtpUtils otpUtils = new OtpUtils();
-
-            String otp = otpUtils.generateOtp();
-            LocalDateTime now = otpUtils.getCurrentDateTime();
-            LocalDateTime expiry = otpUtils.getExpiryDateTime();
-
             emailService.sendOtp(email, otp);
-            tokenRepository.deleteByUserEmail(email);
-            tokenRepository.saveAllTable(otp, now, expiry, false, email);
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "OTP sent successfully");
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(response);
 
-            return ResponseEntity.ok("OTP sent and stored successfully");
+
         } catch (Exception e) {
             e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to send OTP");
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Failed to send OTP");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(error);
+        }
+    }
+    @PostMapping(value = "/store-otp/{otp}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> storeOtp(@RequestBody PasswordResetToken passwordResetToken,
+                                      @PathVariable String otp) {
+        try {
+            OtpUtils otpUtils = new OtpUtils();
+            LocalDateTime currentTime = otpUtils.getCurrentDateTime();
+            LocalDateTime expiry = otpUtils.getExpiryDateTime();
+            User user = passwordResetToken.getUser();
+            boolean used = passwordResetToken.isUsed();
+
+            if (user == null || user.getEmail() == null || user.getEmail().isEmpty()) {
+                return new ResponseEntity<>("User email missing", HttpStatus.BAD_REQUEST);
+            }
+
+            // Directly use the OTP from URL
+            String otpFromUrl = otp;
+
+            // Save OTP to DB
+            tokenRepository.deleteByUserEmail(user.getEmail());
+            tokenRepository.saveAllTable(otpFromUrl, currentTime, expiry, used, user.getEmail());
+
+            return new ResponseEntity<>("Done", HttpStatus.OK);
+        }catch (Exception e){
+            return new ResponseEntity<>("Email Doesn't Exist",HttpStatus.NOT_FOUND);
         }
     }
 
-
-//    @PostMapping("/store-otp")
-//    public ResponseEntity<?> storeOtp(@RequestBody PasswordResetToken passwordResetToken){
-//            OtpUtils otpUtils=new OtpUtils();
-//        LocalDateTime currentTime=otpUtils.getCurrentDateTime();
-//        LocalDateTime expiry=otpUtils.getExpiryDateTime();
-//        User user=passwordResetToken.getUser();
-//        boolean used=passwordResetToken.isUsed();
-//        String otp=otpUtils.otp();
-//        if (user==null){
-//            return  new ResponseEntity<>("User Not Found.",HttpStatus.NOT_FOUND);
-//        }else {
-//            tokenRepository.deleteByUserEmail(user.getEmail());
-//            tokenRepository.saveAllTable(otp,currentTime,expiry,used,user.getEmail());
-//            return new ResponseEntity<>("Done",HttpStatus.OK);
-//        }
-//    }
-    @GetMapping("/otp-checker")
+    @PostMapping("/otp-checker")
     public ResponseEntity<?> otpChecker(@RequestBody OtpModel otpModel){
        String storedOtp= tokenRepository.checkOtpByEmail(otpModel.getEmail());
        if (storedOtp==null||!storedOtp.equals(otpModel.getOtp())){

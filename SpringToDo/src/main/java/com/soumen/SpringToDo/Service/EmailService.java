@@ -19,7 +19,7 @@ public class EmailService {
         this.mailSender = mailSender;
     }
 
-    public void sendOtp(String to, String otp) throws MessagingException {
+    public void sendOtp(String to,String otp) throws MessagingException {
         MimeMessage message = mailSender.createMimeMessage();
         MimeMessageHelper helper = new MimeMessageHelper(message, true);
 
@@ -35,7 +35,7 @@ public class EmailService {
 
         helper.setText(htmlMsg, true);
         System.out.println(otp);
-        helper.setFrom("ToDo App For Reset The Password <sm8939912@gmail.com>");
+        helper.setFrom("ToDo App For One-Time Password (OTP) <todo.sm.89@gmail.com>");
 
         mailSender.send(message);
     }

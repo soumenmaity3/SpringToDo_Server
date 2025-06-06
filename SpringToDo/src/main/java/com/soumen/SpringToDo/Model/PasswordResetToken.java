@@ -28,6 +28,9 @@ public class PasswordResetToken {
     @JoinColumn(name = "user_email", unique = true, nullable = false)
     private User user;
 
+    public PasswordResetToken() {
+    }
+
     public PasswordResetToken(Long id, String otpCode, LocalDateTime createdAt, LocalDateTime expiresAt, boolean used, User user) {
         this.id = id;
         this.otpCode = otpCode;
